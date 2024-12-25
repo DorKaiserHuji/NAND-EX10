@@ -7,6 +7,7 @@ Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 """
 import typing
 
+_SYMBOL_LIST = '{}()[].,;+-*/&|<>=~^#'  # All symbols in the Jack language.
 
 class JackTokenizer:
     """Removes all comments from the input stream and breaks it
@@ -103,10 +104,9 @@ class JackTokenizer:
         # input_lines = input_stream.read().splitlines()
         self.input_lines = input_stream.read().splitlines()
         self.comment_removal()
-        self.tokens = []
-        for line in self.input_lines:
-            self.tokens.append(line.split(" "))
-        self.current_line = 0
+        self.input = ' '.join(self.input_lines)
+        self.current_token = ''
+        self.input_index = 0
 
     def has_more_tokens(self) -> bool:
         """Do we have more tokens in the input?
@@ -115,16 +115,43 @@ class JackTokenizer:
             bool: True if there are more tokens, False otherwise.
         """
         # Your code goes here!
-        return self.current_line < len(self.input_lines)
+        return self.input_index < len(self.input)
 
-    def advance(self) -> None:
+    def advance(self) -> typing.Generator:
         """Gets the next token from the input and makes it the current token. 
         This method should be called if has_more_tokens() is true. 
         Initially there is no current token.
         """
         # Your code goes here!
-        if self.has_more_tokens():
-            self.current_line += 1
+        while self.input_index < len(self.input):
+            if self.input[self.input_index] in _SYMBOL_LIST or (self.current_token in _SYMBOL_LIST and self.current_token != ''):
+                if self.current_token != '':
+                    yield self.current_token
+                    self.current_token = ''
+                self.current_token = self.input[self.input_index].strip()
+                if self.current_token in _SYMBOL_LIST and self.current_token != '':
+                    yield self.current_token
+                    self.current_token = ''
+                    self.input_index += 1
+            if self.input[self.input_index] == '"':
+                self.current_token = self.input[self.input_index]
+                self.input_index += 1
+                while self.input[self.input_index] != '"':
+                    self.current_token += self.input[self.input_index]
+                    self.input_index += 1
+                self.current_token += self.input[self.input_index]
+                yield self.current_token
+                self.current_token = ''
+                self.input_index += 1
+
+            if self.input[self.input_index] == ' ' or self.input[self.input_index] == '\t' or self.input[self.input_index] == '\n':
+                if self.current_token != '':
+                    yield self.current_token
+                    self.current_token = ''
+                self.input_index += 1
+
+            self.current_token += self.input[self.input_index].strip()
+            self.input_index += 1
 
     def token_type(self) -> str:
         """
@@ -134,7 +161,7 @@ class JackTokenizer:
         """
         # Your code goes here!
         # TODO the tokens are the whole line, not just the keyword. Thus we are not getting "class" but "class Main {"
-        match (self.input_lines[self.current_line]):
+        match (self.current_token):
             case 'class':
                 return 'KEYWORD'
             case 'constructor':
@@ -219,9 +246,9 @@ class JackTokenizer:
                 return 'SYMBOL'
             case '#':
                 return 'SYMBOL'
-        if self.input_lines[self.current_line].isdigit():
+        if self.current_token.isdigit():
             return 'INT_CONST'
-        if self.input_lines[self.current_line].startswith('"'):
+        if self.current_token.startswith('"'):
             return 'STRING_CONST'
         return 'IDENTIFIER'
 
@@ -236,7 +263,7 @@ class JackTokenizer:
         """
         # Your code goes here!
         # TODO the tokens are the whole line, not just the keyword. Thus we are not getting "class" but "class Main {"
-        match (self.input_lines[self.current_line]):
+        match (self.current_token):
             case 'class':
                 return 'CLASS'
             case 'constructor':
@@ -279,6 +306,7 @@ class JackTokenizer:
                 return 'WHILE'
             case 'return':
                 return 'RETURN'
+        raise ValueError('Invalid keyword')
 
     def symbol(self) -> str:
         """
@@ -290,49 +318,9 @@ class JackTokenizer:
               '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=' | '~' | '^' | '#'
         """
         # Your code goes here!
-        match (self.input_lines[self.current_line]):
-            case '{':
-                return '{'
-            case '}':
-                return '}'
-            case '(':
-                return '('
-            case ')':
-                return ')'
-            case '[':
-                return '['
-            case ']':
-                return ']'
-            case '.':
-                return '.'
-            case ',':
-                return ','
-            case ';':
-                return ';'
-            case '+':
-                return '+'
-            case '-':
-                return '-'
-            case '*':
-                return '*'
-            case '/':
-                return '/'
-            case '&':
-                return '&'
-            case '|':
-                return '|'
-            case '<':
-                return '<'
-            case '>':
-                return '>'
-            case '=':
-                return '='
-            case '~':
-                return '~'
-            case '^':
-                return '^'
-            case '#':
-                return '#'
+        if self.current_token in _SYMBOL_LIST:
+            return self.current_token
+        raise ValueError('Invalid symbol')
 
     def identifier(self) -> str:
         """
@@ -345,7 +333,7 @@ class JackTokenizer:
                   identifiers, so 'self' cannot be an identifier, etc'.
         """
         # Your code goes here!
-        return self.input_lines[self.current_line]
+        return self.current_token
 
     def int_val(self) -> int:
         """
@@ -356,7 +344,7 @@ class JackTokenizer:
             integerConstant: A decimal number in the range 0-32767.
         """
         # Your code goes here!
-        return int(self.input_lines[self.current_line])
+        return int(self.current_token)
 
     def string_val(self) -> str:
         """
@@ -368,7 +356,7 @@ class JackTokenizer:
                       double quote or newline '"'
         """
         # Your code goes here!
-        return self.input_lines[self.current_line][1:-1]
+        return self.current_token[1:-1]
 
     def comment_removal(self) -> None:
         """Removes comments from the input lines."""
