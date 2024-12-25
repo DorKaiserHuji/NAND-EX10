@@ -25,6 +25,8 @@ def analyze_file(
     # tokenizer = JackTokenizer(input_file)
     # engine = CompilationEngine(tokenizer, output_file)
     tokenizer = JackTokenizer(input_file)
+    for _ in tokenizer.advance():
+        print(tokenizer.token_type(), tokenizer.current_token)
     engine = CompilationEngine(tokenizer, output_file)
     engine.compile_class()
 
