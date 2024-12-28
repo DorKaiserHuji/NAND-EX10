@@ -10,6 +10,7 @@ import sys
 import typing
 from CompilationEngine import CompilationEngine
 from JackTokenizer import JackTokenizer
+import xml.etree.cElementTree as ET
 
 
 def analyze_file(
@@ -24,9 +25,23 @@ def analyze_file(
     # It might be good to start by creating a new JackTokenizer and CompilationEngine:
     # tokenizer = JackTokenizer(input_file)
     # engine = CompilationEngine(tokenizer, output_file)
+    root = ET.Element("tokens")
     tokenizer = JackTokenizer(input_file)
     for _ in tokenizer.advance():
-        print(tokenizer.token_type(), tokenizer.current_token)
+        token_type = tokenizer.token_type()
+        if token_type == "KEYWORD":
+            ET.SubElement(root, token_type).text = tokenizer.keyword()
+        elif token_type == "SYMBOL":
+            ET.SubElement(root, token_type).text = tokenizer.symbol()
+        elif token_type == "IDENTIFIER":
+            ET.SubElement(root, token_type).text = tokenizer.identifier()
+        elif token_type == "INT_CONST":
+            ET.SubElement(root, token_type).text = str(tokenizer.int_val())
+        elif token_type == "STRING_CONST":
+            ET.SubElement(root, token_type).text = tokenizer.string_val()
+    tree = ET.ElementTree(root)
+    tree.write("tmp.xml")
+
     engine = CompilationEngine(tokenizer, output_file)
     engine.compile_class()
 
