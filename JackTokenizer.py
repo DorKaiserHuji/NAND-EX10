@@ -124,7 +124,10 @@ class JackTokenizer:
         """
         # Your code goes here!
         while self.input_index < len(self.input):
-            if self.input[self.input_index] in _SYMBOL_LIST or (self.current_token in _SYMBOL_LIST and self.current_token != ''):
+            if self.current_token in _SYMBOL_LIST and self.current_token != '':
+                yield self.current_token
+                self.current_token = ''
+            if self.input[self.input_index] in _SYMBOL_LIST:
                 if self.current_token != '':
                     yield self.current_token
                     self.current_token = ''
@@ -152,6 +155,8 @@ class JackTokenizer:
 
             self.current_token += self.input[self.input_index].strip()
             self.input_index += 1
+
+        yield self.current_token
 
     def token_type(self) -> str:
         """
