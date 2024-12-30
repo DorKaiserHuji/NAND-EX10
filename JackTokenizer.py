@@ -361,7 +361,7 @@ class JackTokenizer:
                       double quote or newline '"'
         """
         # Your code goes here!
-        return self.current_token[1:-1]
+        return self.current_token.strip('"')
 
     def comment_removal(self) -> None:
         """Removes comments from the input lines."""
