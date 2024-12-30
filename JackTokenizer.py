@@ -9,6 +9,7 @@ import typing
 
 _SYMBOL_LIST = '{}()[].,;+-*/&|<>=~^#'  # All symbols in the Jack language.
 
+
 class JackTokenizer:
     """Removes all comments from the input stream and breaks it
     into Jack language tokens, as specified by the Jack grammar.
@@ -147,7 +148,8 @@ class JackTokenizer:
                 self.current_token = ''
                 self.input_index += 1
 
-            if self.input[self.input_index] == ' ' or self.input[self.input_index] == '\t' or self.input[self.input_index] == '\n':
+            if self.input[self.input_index] == ' ' or self.input[self.input_index] == '\t' or self.input[
+                self.input_index] == '\n':
                 if self.current_token != '':
                     yield self.current_token
                     self.current_token = ''
@@ -165,8 +167,7 @@ class JackTokenizer:
             "KEYWORD", "SYMBOL", "IDENTIFIER", "INT_CONST", "STRING_CONST"
         """
         # Your code goes here!
-        # TODO the tokens are the whole line, not just the keyword. Thus we are not getting "class" but "class Main {"
-        match (self.current_token):
+        match self.current_token:
             case 'class':
                 return 'KEYWORD'
             case 'constructor':
@@ -267,8 +268,7 @@ class JackTokenizer:
             "IF", "ELSE", "WHILE", "RETURN", "TRUE", "FALSE", "NULL", "THIS"
         """
         # Your code goes here!
-        # TODO the tokens are the whole line, not just the keyword. Thus we are not getting "class" but "class Main {"
-        match (self.current_token):
+        match self.current_token:
             case 'class':
                 return 'CLASS'
             case 'constructor':

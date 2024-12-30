@@ -6,6 +6,8 @@ as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
 Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 """
 import typing
+import xml.etree.ElementTree as ET
+import JackTokenizer
 
 
 class CompilationEngine:
@@ -23,60 +25,70 @@ class CompilationEngine:
         # Your code goes here!
         # Note that you can write to output_stream like so:
         # output_stream.write("Hello world! \n")
+        class Token:
+            def __init__(self, tag, text):
+                self.tag = tag
+                self.text = text
+
+        xml_file = "tmp.xml"
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
         self.output_stream = output_stream
         self.tokenizer = input_stream
+        self.tokens = [Token(token.tag, token.text.strip()) for token in root]
+        self.current_token_index = 0
 
     def compile_class(self) -> None:
         """Compiles a complete class."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.keyword() != "class":
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text != "CLASS":
             raise ValueError("Expected a class declaration")
         self.output_stream.write("<class>\n")
         self.output_stream.write("<keyword> class </keyword>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "IDENTIFIER":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
-        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "{":
+        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "{":
             raise ValueError("Expected an opening curly bracket.")
         self.output_stream.write("<symbol> { </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_class_var_dec()
         self.compile_subroutine()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "}":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "}":
             raise ValueError("Expected a closing curly bracket.")
         self.output_stream.write("<symbol> } </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.output_stream.write("</class>\n")
 
     def compile_class_var_dec(self) -> None:
         """Compiles a static declaration or a field declaration."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() not in ["static", "field"]:
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text not in ["STATIC", "FIELD"]:
             return
         self.output_stream.write("<classVarDec>\n")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() not in ["KEYWORD", "IDENTIFIER"]:
+        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             raise ValueError("Expected a type.")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "IDENTIFIER":
+        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
-        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-        self.tokenizer.advance()
-        while self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() == ",":
+        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        while self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == ",":
             self.output_stream.write("<symbol> , </symbol>\n")
-            self.tokenizer.advance()
-            if self.tokenizer.token_type() != "IDENTIFIER":
+            self.current_token_index += 1
+            if self.tokens[self.current_token_index].tag != "IDENTIFIER":
                 raise ValueError("Expected an identifier.")
-            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-            self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ";":
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ";":
             raise ValueError("Expected a semicolon.")
         self.output_stream.write("<symbol> ; </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.output_stream.write("</classVarDec>\n")
         self.compile_class_var_dec()
 
@@ -87,38 +99,41 @@ class CompilationEngine:
         you will understand why this is necessary in project 11.
         """
         # Your code goes here!
-        if self.tokenizer.token_type() not in ["KEYWORD", "IDENTIFIER"]:
+        if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             return
         self.output_stream.write("<subroutineDec>\n")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() not in ["KEYWORD", "IDENTIFIER"]:
+        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             raise ValueError("Expected a type.")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "IDENTIFIER":
+        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
-        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "(":
+        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "(":
             raise ValueError("Expected an opening parenthesis.")
         self.output_stream.write("<symbol> ( </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_parameter_list()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ")":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ")":
             raise ValueError("Expected a closing parenthesis.")
         self.output_stream.write("<symbol> ) </symbol>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "{":
+        self.current_token_index += 1
+        self.output_stream.write("<subroutineBody>\n")
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "{":
             raise ValueError("Expected an opening curly bracket.")
         self.output_stream.write("<symbol> { </symbol>\n")
-        self.tokenizer.advance()
-        self.compile_var_dec()
+        self.current_token_index += 1
+        while self.tokens[self.current_token_index].tag == "KEYWORD" and self.tokens[self.current_token_index].text == "VAR":
+            self.compile_var_dec()
         self.compile_statements()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "}":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "}":
             raise ValueError("Expected a closing curly bracket.")
         self.output_stream.write("<symbol> } </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
+        self.output_stream.write("</subroutineBody>\n")
         self.output_stream.write("</subroutineDec>\n")
         self.compile_subroutine()
 
@@ -127,57 +142,63 @@ class CompilationEngine:
         enclosing "()".
         """
         # Your code goes here!
-        if self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() == ")":
-            return
         self.output_stream.write("<parameterList>\n")
-        if self.tokenizer.token_type() not in ["KEYWORD", "IDENTIFIER"]:
+        if self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == ")":
+            self.output_stream.write("</parameterList>\n")
+            return
+        if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             raise ValueError("Expected a type.")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "IDENTIFIER":
+        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
-        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-        self.tokenizer.advance()
-        while self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() == ",":
+        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        while self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == ",":
             self.output_stream.write("<symbol> , </symbol>\n")
-            self.tokenizer.advance()
-            if self.tokenizer.token_type() not in ["KEYWORD", "IDENTIFIER"]:
+            self.current_token_index += 1
+            if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
                 raise ValueError("Expected a type.")
-            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-            self.tokenizer.advance()
-            if self.tokenizer.token_type() != "IDENTIFIER":
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
+            if self.tokens[self.current_token_index].tag != "IDENTIFIER":
                 raise ValueError("Expected an identifier.")
-            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-            self.tokenizer.advance()
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
         self.output_stream.write("</parameterList>\n")
 
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() != "var":
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text != "VAR":
             return
         self.output_stream.write("<varDec>\n")
         self.output_stream.write("<keyword> var </keyword>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() not in ["KEYWORD", "IDENTIFIER"]:
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             raise ValueError("Expected a type.")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "IDENTIFIER":
+        if self.tokens[self.current_token_index].tag == "KEYWORD" and self.tokens[self.current_token_index].text not in ["INT", "CHAR", "BOOLEAN"]:
+            raise ValueError("Expected a type.")
+        if self.tokens[self.current_token_index].tag == "IDENTIFIER":
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        else:
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
-        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-        self.tokenizer.advance()
-        while self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() == ",":
+        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        while self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == ",":
             self.output_stream.write("<symbol> , </symbol>\n")
-            self.tokenizer.advance()
-            if self.tokenizer.token_type() != "IDENTIFIER":
+            self.current_token_index += 1
+            if self.tokens[self.current_token_index].tag != "IDENTIFIER":
                 raise ValueError("Expected an identifier.")
-            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-            self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ";":
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ";":
             raise ValueError("Expected a semicolon.")
         self.output_stream.write("<symbol> ; </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.output_stream.write("</varDec>\n")
 
     def compile_statements(self) -> None:
@@ -185,164 +206,171 @@ class CompilationEngine:
         "{}".
         """
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() not in ["let", "if", "while", "do", "return"]:
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text not in ["LET", "IF", "WHILE", "DO", "RETURN"]:
             return
         self.output_stream.write("<statements>\n")
-        while self.tokenizer.token_type() == "KEYWORD" and self.tokenizer.key_word() in ["let", "if", "while", "do", "return"]:
-            if self.tokenizer.key_word() == "let":
+        while self.tokens[self.current_token_index].tag == "KEYWORD" and self.tokens[self.current_token_index].text in ["LET", "IF", "WHILE", "DO", "RETURN"]:
+            if self.tokens[self.current_token_index].text == "LET":
                 self.compile_let()
-            elif self.tokenizer.key_word() == "if":
+            elif self.tokens[self.current_token_index].text == "IF":
                 self.compile_if()
-            elif self.tokenizer.key_word() == "while":
+            elif self.tokens[self.current_token_index].text == "WHILE":
                 self.compile_while()
-            elif self.tokenizer.key_word() == "do":
+            elif self.tokens[self.current_token_index].text == "DO":
                 self.compile_do()
-            elif self.tokenizer.key_word() == "return":
+            elif self.tokens[self.current_token_index].text == "RETURN":
                 self.compile_return()
         self.output_stream.write("</statements>\n")
 
     def compile_do(self) -> None:
         """Compiles a do statement."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() != "do":
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text != "DO":
             raise ValueError("Expected a do statement.")
         self.output_stream.write("<doStatement>\n")
         self.output_stream.write("<keyword> do </keyword>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_subroutine_call()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ";":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ";":
             raise ValueError("Expected a semicolon.")
         self.output_stream.write("<symbol> ; </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.output_stream.write("</doStatement>\n")
 
     def compile_let(self) -> None:
         """Compiles a let statement."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() != "let":
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text != "LET":
             raise ValueError("Expected a let statement.")
         self.output_stream.write("<letStatement>\n")
         self.output_stream.write("<keyword> let </keyword>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "IDENTIFIER":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
-        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() not in "[=":
+        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text not in "[=":
             raise ValueError("Expected an opening square bracket or an equal sign.")
-        if self.tokenizer.symbol() == "[":
+        if self.tokens[self.current_token_index].text == "[":
             self.output_stream.write("<symbol> [ </symbol>\n")
-            self.tokenizer.advance()
+            self.current_token_index += 1
             self.compile_expression()
-            if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "]":
+            if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "]":
                 raise ValueError("Expected a closing square bracket.")
             self.output_stream.write("<symbol> ] </symbol>\n")
-            self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "=":
+            self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "=":
             raise ValueError("Expected an equal sign.")
         self.output_stream.write("<symbol> = </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_expression()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ";":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ";":
             raise ValueError("Expected a semicolon.")
         self.output_stream.write("<symbol> ; </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.output_stream.write("</letStatement>\n")
 
     def compile_while(self) -> None:
         """Compiles a while statement."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() != "while":
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text != "WHILE":
             raise ValueError("Expected a while statement.")
         self.output_stream.write("<whileStatement>\n")
         self.output_stream.write("<keyword> while </keyword>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "(":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "(":
             raise ValueError("Expected an opening parenthesis.")
         self.output_stream.write("<symbol> ( </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_expression()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ")":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ")":
             raise ValueError("Expected a closing parenthesis.")
         self.output_stream.write("<symbol> ) </symbol>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "{":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "{":
             raise ValueError("Expected an opening curly bracket.")
         self.output_stream.write("<symbol> { </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_statements()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "}":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "}":
             raise ValueError("Expected a closing curly bracket.")
         self.output_stream.write("<symbol> } </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.output_stream.write("</whileStatement>\n")
 
     def compile_return(self) -> None:
         """Compiles a return statement."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() != "return":
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text != "RETURN":
             raise ValueError("Expected a return statement.")
         self.output_stream.write("<returnStatement>\n")
         self.output_stream.write("<keyword> return </keyword>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ";":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ";":
             self.compile_expression()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ";":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ";":
             raise ValueError("Expected a semicolon.")
         self.output_stream.write("<symbol> ; </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.output_stream.write("</returnStatement>\n")
 
     def compile_if(self) -> None:
         """Compiles a if statement, possibly with a trailing else clause."""
         # Your code goes here!
-        if self.tokenizer.token_type() != "KEYWORD" or self.tokenizer.key_word() != "if":
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text != "IF":
             raise ValueError("Expected an if statement.")
         self.output_stream.write("<ifStatement>\n")
         self.output_stream.write("<keyword> if </keyword>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "(":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "(":
             raise ValueError("Expected an opening parenthesis.")
         self.output_stream.write("<symbol> ( </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_expression()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ")":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ")":
             raise ValueError("Expected a closing parenthesis.")
         self.output_stream.write("<symbol> ) </symbol>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "{":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "{":
             raise ValueError("Expected an opening curly bracket.")
         self.output_stream.write("<symbol> { </symbol>\n")
-        self.tokenizer.advance()
+        self.current_token_index += 1
         self.compile_statements()
-        if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "}":
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "}":
             raise ValueError("Expected a closing curly bracket.")
         self.output_stream.write("<symbol> } </symbol>\n")
-        self.tokenizer.advance()
-        if self.tokenizer.token_type() == "KEYWORD" and self.tokenizer.key_word() == "else":
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag == "KEYWORD" and self.tokens[self.current_token_index].text == "ELSE":
             self.output_stream.write("<keyword> else </keyword>\n")
-            self.tokenizer.advance()
-            if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "{":
+            self.current_token_index += 1
+            if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "{":
                 raise ValueError("Expected an opening curly bracket.")
             self.output_stream.write("<symbol> { </symbol>\n")
-            self.tokenizer.advance()
+            self.current_token_index += 1
             self.compile_statements()
-            if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "}":
+            if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "}":
                 raise ValueError("Expected a closing curly bracket.")
             self.output_stream.write("<symbol> } </symbol>\n")
-            self.tokenizer.advance()
+            self.current_token_index += 1
         self.output_stream.write("</ifStatement>\n")
 
     def compile_expression(self) -> None:
         """Compiles an expression."""
         # Your code goes here!
-        if self.tokenizer.token_type() not in ["INT_CONST", "STRING_CONST", "KEYWORD", "IDENTIFIER", "SYMBOL"]:
+        if self.tokens[self.current_token_index].tag not in ["INT_CONST", "STRING_CONST", "KEYWORD", "IDENTIFIER", "SYMBOL"]:
             return
         self.output_stream.write("<expression>\n")
         self.compile_term()
-        while self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() in "+-*/&|<>=":
-            self.output_stream.write("<symbol> {} </symbol>\n".format(self.tokenizer.symbol()))
-            self.tokenizer.advance()
+        while self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text in "+-*/&|<>=.":
+            if self.tokens[self.current_token_index].text == "<":
+                self.output_stream.write("<symbol> &lt; </symbol>\n")
+            elif self.tokens[self.current_token_index].text == ">":
+                self.output_stream.write("<symbol> &gt; </symbol>\n")
+            elif self.tokens[self.current_token_index].text == "&":
+                self.output_stream.write("<symbol> &amp; </symbol>\n")
+            else:
+                self.output_stream.write("<symbol> {} </symbol>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
             self.compile_term()
         self.output_stream.write("</expression>\n")
 
@@ -357,77 +385,112 @@ class CompilationEngine:
         part of this term and should not be advanced over.
         """
         # Your code goes here!
-        if self.tokenizer.token_type() not in ["INT_CONST", "STRING_CONST", "KEYWORD", "IDENTIFIER", "SYMBOL"]:
+        if self.tokens[self.current_token_index].tag not in ["INT_CONST", "STRING_CONST", "KEYWORD", "IDENTIFIER", "SYMBOL"]:
             return
-        self.output_stream.write("<term>\n")
-        if self.tokenizer.token_type() == "INT_CONST":
-            self.output_stream.write("<integerConstant> {} </integerConstant>\n".format(self.tokenizer.int_val()))
-            self.tokenizer.advance()
-        elif self.tokenizer.token_type() == "STRING_CONST":
-            self.output_stream.write("<stringConstant> {} </stringConstant>\n".format(self.tokenizer.string_val()))
-            self.tokenizer.advance()
-        elif self.tokenizer.token_type() == "KEYWORD" and self.tokenizer.key_word() in ["true", "false", "null", "this"]:
-            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokenizer.key_word()))
-            self.tokenizer.advance()
-        elif self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() in "-~":
-            self.output_stream.write("<symbol> {} </symbol>\n".format(self.tokenizer.symbol()))
-            self.tokenizer.advance()
+        if self.tokens[self.current_token_index].tag == "INT_CONST":
+            self.output_stream.write("<term>\n")
+            self.output_stream.write("<integerConstant> {} </integerConstant>\n".format(int(self.tokens[self.current_token_index].text)))
+            self.current_token_index += 1
+            self.output_stream.write("</term>\n")
+        elif self.tokens[self.current_token_index].tag == "STRING_CONST":
+            self.output_stream.write("<term>\n")
+            self.output_stream.write("<stringConstant> {} </stringConstant>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
+            self.output_stream.write("</term>\n")
+        elif self.tokens[self.current_token_index].tag == "KEYWORD" and self.tokens[self.current_token_index].text in ["TRUE", "FALSE", "NULL", "THIS"]:
+            self.output_stream.write("<term>\n")
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
+            self.output_stream.write("</term>\n")
+        elif self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text in "-~":
+            self.output_stream.write("<term>\n")
+            self.output_stream.write("<symbol> {} </symbol>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
             self.compile_term()
-        elif self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() == "(":
+            self.output_stream.write("</term>\n")
+        elif self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == "(":
+            self.output_stream.write("<term>\n")
             self.output_stream.write("<symbol> ( </symbol>\n")
-            self.tokenizer.advance()
+            self.current_token_index += 1
             self.compile_expression()
-            if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ")":
+            if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ")":
                 raise ValueError("Expected a closing parenthesis.")
             self.output_stream.write("<symbol> ) </symbol>\n")
-            self.tokenizer.advance()
-        elif self.tokenizer.token_type() == "IDENTIFIER":
-            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-            self.tokenizer.advance()
-            if self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() in "[(":
-                if self.tokenizer.symbol() == "[":
+            self.current_token_index += 1
+            self.output_stream.write("</term>\n")
+        elif self.tokens[self.current_token_index].tag == "IDENTIFIER":
+            self.output_stream.write("<term>\n")
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
+            if self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text in "[(.":
+                if self.tokens[self.current_token_index].text == "[":
                     self.output_stream.write("<symbol> [ </symbol>\n")
-                    self.tokenizer.advance()
+                    self.current_token_index += 1
                     self.compile_expression()
-                    if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "]":
+                    if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "]":
                         raise ValueError("Expected a closing square bracket.")
                     self.output_stream.write("<symbol> ] </symbol>\n")
-                    self.tokenizer.advance()
-                elif self.tokenizer.symbol() == "(":
+                    self.current_token_index += 1
+                elif self.tokens[self.current_token_index].text == "(":
                     self.output_stream.write("<symbol> ( </symbol>\n")
-                    self.tokenizer.advance()
+                    self.current_token_index += 1
                     self.compile_expression_list()
-                    if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ")":
+                    if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ")":
                         raise ValueError("Expected a closing parenthesis.")
                     self.output_stream.write("<symbol> ) </symbol>\n")
-                    self.tokenizer.advance()
-                elif self.tokenizer.symbol() == ".":
+                    self.current_token_index += 1
+                elif self.tokens[self.current_token_index].text == ".":
                     self.output_stream.write("<symbol> . </symbol>\n")
-                    self.tokenizer.advance()
-                    if self.tokenizer.token_type() != "IDENTIFIER":
+                    self.current_token_index += 1
+                    if self.tokens[self.current_token_index].tag != "IDENTIFIER":
                         raise ValueError("Expected an identifier.")
-                    self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokenizer.identifier()))
-                    self.tokenizer.advance()
-                    if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != "(":
+                    self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+                    self.current_token_index += 1
+                    if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "(":
                         raise ValueError("Expected an opening parenthesis.")
                     self.output_stream.write("<symbol> ( </symbol>\n")
-                    self.tokenizer.advance()
+                    self.current_token_index += 1
                     self.compile_expression_list()
-                    if self.tokenizer.token_type() != "SYMBOL" or self.tokenizer.symbol() != ")":
+                    if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ")":
                         raise ValueError("Expected a closing parenthesis.")
                     self.output_stream.write("<symbol> ) </symbol>\n")
-                    self.tokenizer.advance()
-        self.output_stream.write("</term>\n")
+                    self.current_token_index += 1
+            self.output_stream.write("</term>\n")
 
     def compile_expression_list(self) -> None:
         """Compiles a (possibly empty) comma-separated list of expressions."""
         # Your code goes here!
-        if self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() == ")":
-            return
         self.output_stream.write("<expressionList>\n")
+        if self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == ")":
+            self.output_stream.write("</expressionList>\n")
+            return
         self.compile_expression()
-        while self.tokenizer.token_type() == "SYMBOL" and self.tokenizer.symbol() == ",":
+        while self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == ",":
             self.output_stream.write("<symbol> , </symbol>\n")
-            self.tokenizer.advance()
+            self.current_token_index += 1
             self.compile_expression()
         self.output_stream.write("</expressionList>\n")
+
+    def compile_subroutine_call(self) -> None:
+        """Compiles a subroutine call."""
+        # Your code goes here!
+        if self.tokens[self.current_token_index].tag != "IDENTIFIER":
+            raise ValueError("Expected an identifier.")
+        self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text == ".":
+            self.output_stream.write("<symbol> . </symbol>\n")
+            self.current_token_index += 1
+            if self.tokens[self.current_token_index].tag != "IDENTIFIER":
+                raise ValueError("Expected an identifier.")
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+            self.current_token_index += 1
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != "(":
+            raise ValueError("Expected an opening parenthesis.")
+        self.output_stream.write("<symbol> ( </symbol>\n")
+        self.current_token_index += 1
+        self.compile_expression_list()
+        if self.tokens[self.current_token_index].tag != "SYMBOL" or self.tokens[self.current_token_index].text != ")":
+            raise ValueError("Expected a closing parenthesis.")
+        self.output_stream.write("<symbol> ) </symbol>\n")
+        self.current_token_index += 1
