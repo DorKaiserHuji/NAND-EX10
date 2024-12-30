@@ -68,11 +68,14 @@ class CompilationEngine:
         if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text not in ["STATIC", "FIELD"]:
             return
         self.output_stream.write("<classVarDec>\n")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
         self.current_token_index += 1
         if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             raise ValueError("Expected a type.")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        if self.tokens[self.current_token_index].text.upper() not in ["INT", "CHAR", "BOOLEAN"]:
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        else:
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
         self.current_token_index += 1
         if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
@@ -102,11 +105,14 @@ class CompilationEngine:
         if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             return
         self.output_stream.write("<subroutineDec>\n")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
         self.current_token_index += 1
         if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             raise ValueError("Expected a type.")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        if self.tokens[self.current_token_index].text.upper() not in ["INT", "CHAR", "BOOLEAN", "VOID"]:
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        else:
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
         self.current_token_index += 1
         if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
@@ -148,7 +154,10 @@ class CompilationEngine:
             return
         if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
             raise ValueError("Expected a type.")
-        self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+        if self.tokens[self.current_token_index].text.upper() not in ["INT", "CHAR", "BOOLEAN"]:
+            self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+        else:
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
         self.current_token_index += 1
         if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
@@ -159,7 +168,10 @@ class CompilationEngine:
             self.current_token_index += 1
             if self.tokens[self.current_token_index].tag not in ["KEYWORD", "IDENTIFIER"]:
                 raise ValueError("Expected a type.")
-            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+            if self.tokens[self.current_token_index].text.upper() not in ["INT", "CHAR", "BOOLEAN"]:
+                self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
+            else:
+                self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
             self.current_token_index += 1
             if self.tokens[self.current_token_index].tag != "IDENTIFIER":
                 raise ValueError("Expected an identifier.")
@@ -182,7 +194,7 @@ class CompilationEngine:
         if self.tokens[self.current_token_index].tag == "IDENTIFIER":
             self.output_stream.write("<identifier> {} </identifier>\n".format(self.tokens[self.current_token_index].text))
         else:
-            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
         self.current_token_index += 1
         if self.tokens[self.current_token_index].tag != "IDENTIFIER":
             raise ValueError("Expected an identifier.")
@@ -206,9 +218,10 @@ class CompilationEngine:
         "{}".
         """
         # Your code goes here!
-        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text not in ["LET", "IF", "WHILE", "DO", "RETURN"]:
-            return
         self.output_stream.write("<statements>\n")
+        if self.tokens[self.current_token_index].tag != "KEYWORD" or self.tokens[self.current_token_index].text not in ["LET", "IF", "WHILE", "DO", "RETURN"]:
+            self.output_stream.write("</statements>\n")
+            return
         while self.tokens[self.current_token_index].tag == "KEYWORD" and self.tokens[self.current_token_index].text in ["LET", "IF", "WHILE", "DO", "RETURN"]:
             if self.tokens[self.current_token_index].text == "LET":
                 self.compile_let()
@@ -399,7 +412,7 @@ class CompilationEngine:
             self.output_stream.write("</term>\n")
         elif self.tokens[self.current_token_index].tag == "KEYWORD" and self.tokens[self.current_token_index].text in ["TRUE", "FALSE", "NULL", "THIS"]:
             self.output_stream.write("<term>\n")
-            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text))
+            self.output_stream.write("<keyword> {} </keyword>\n".format(self.tokens[self.current_token_index].text).lower())
             self.current_token_index += 1
             self.output_stream.write("</term>\n")
         elif self.tokens[self.current_token_index].tag == "SYMBOL" and self.tokens[self.current_token_index].text in "-~":
