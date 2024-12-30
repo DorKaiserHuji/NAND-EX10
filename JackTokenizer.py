@@ -367,7 +367,10 @@ class JackTokenizer:
         """Removes comments from the input lines."""
         i = 0
         while i < len(self.input_lines):
-            if self.input_lines[i].startswith('//'):
+            self.input_lines[i] = self.input_lines[i].strip()
+            if self.input_lines[i].strip().find('//') != -1:
+                self.input_lines[i] = self.input_lines[i][:self.input_lines[i].find('//')]
+            if len(self.input_lines[i]) == 0:
                 self.input_lines.remove(self.input_lines[i])
             elif self.input_lines[i].startswith('/*') or self.input_lines[i].startswith('/**'):
                 if self.input_lines[i].endswith('*/'):
