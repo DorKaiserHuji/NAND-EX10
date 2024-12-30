@@ -378,6 +378,7 @@ class JackTokenizer:
                     continue
                 while not self.input_lines[i].endswith('*/'):
                     self.input_lines.remove(self.input_lines[i])
+                self.input_lines.remove(self.input_lines[i])
             elif self.input_lines[i] == '':
                 self.input_lines.remove(self.input_lines[i])
             else:
