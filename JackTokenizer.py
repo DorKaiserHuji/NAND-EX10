@@ -137,7 +137,7 @@ class JackTokenizer:
                     yield self.current_token
                     self.current_token = ''
                     self.input_index += 1
-            if self.input[self.input_index] == '"':
+            if self.input[self.input_index]  == '"' or self.current_token == '"':
                 self.current_token = self.input[self.input_index]
                 self.input_index += 1
                 while self.input[self.input_index] != '"':
